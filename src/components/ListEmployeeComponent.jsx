@@ -1,10 +1,10 @@
-import React, { Component } from 'react'
-import { Modal, Button, Form } from 'react-bootstrap';
-import EmployeeService from '../services/EmployeeService'
+import React, { Component } from 'react';
+import { Modal, Button, Form, Card, Col, Row } from 'react-bootstrap';
+import EmployeeService from '../services/EmailService';
 
 class ListEmployeeComponent extends Component {
     constructor(props) {
-        super(props)
+        super(props);
 
         this.state = {
             emails: [],
@@ -15,48 +15,44 @@ class ListEmployeeComponent extends Component {
                 password: '',
                 webhook: ''
             }
-        }
+        };
+
         this.addEmployee = this.addEmployee.bind(this);
         this.editEmployee = this.editEmployee.bind(this);
-        this.deleteEmployee = this.deleteEmployee.bind(this);
         this.handleShow = this.handleShow.bind(this);
         this.handleClose = this.handleClose.bind(this);
         this.handleChange = this.handleChange.bind(this);
         this.updateEmployee = this.updateEmployee.bind(this);
     }
 
-    deleteEmployee(id){
-        EmployeeService.deleteEmployee(id).then( res => {
-            this.setState({emails: this.state.emails.filter(employee => employee.id !== id)});
-        });
-    }
-    viewEmployee(id){
+    viewEmployee(id) {
         this.props.history.push(`/view-employee/${id}`);
     }
-    editEmployee(id){
+
+    editEmployee(id) {
         const employee = this.state.emails.find(emp => emp.id === id);
         this.setState({ currentEmployee: employee, showModal: true });
     }
 
-    componentDidMount(){
-        EmployeeService.getEmployees().then((res) => {
-            this.setState({ emails: res.data});
+    componentDidMount() {
+        EmployeeService.getEmail().then((res) => {
+            this.setState({ emails: res.data });
         });
     }
 
-    addEmployee(){
+    addEmployee() {
         this.props.history.push('/add-employee/_add');
     }
 
-    handleShow(){
+    handleShow() {
         this.setState({ showModal: true });
     }
 
-    handleClose(){
+    handleClose() {
         this.setState({ showModal: false, currentEmployee: { id: '', userName: '', password: '', webhook: '' } });
     }
 
-    handleChange(e){
+    handleChange(e) {
         const { name, value } = e.target;
         this.setState(prevState => ({
             currentEmployee: {
@@ -66,8 +62,8 @@ class ListEmployeeComponent extends Component {
         }));
     }
 
-    updateEmployee(){
-        EmployeeService.updateEmployee(this.state.currentEmployee, this.state.currentEmployee.id).then(res => {
+    updateEmployee() {
+        EmployeeService.updateEmail(this.state.currentEmployee, this.state.currentEmployee.id).then(res => {
             this.setState(prevState => ({
                 emails: prevState.emails.map(emp => (emp.id === prevState.currentEmployee.id ? prevState.currentEmployee : emp)),
                 showModal: false,
@@ -79,41 +75,36 @@ class ListEmployeeComponent extends Component {
     render() {
         return (
             <div>
-                 <h2 className="text-center">Email</h2>
-                 <br></br>
-                 <div className = "row">
-                        <table className = "table table-striped table-bordered">
+                <h2 className="text-center">Emails</h2>
+                <br />
+                <div className="container">
+                    <Row xs={1} md={2} lg={3} className="g-4">
+                        {this.state.emails.map(email => (
+                            <Col key={email.id}>
+                                <Card>
+                                    <Card.Body>
+                                        <Card.Text>
+                                            <strong>Email:</strong> {email.userName}
+                                            <br />
 
-                            <thead>
-                                <tr>
-                                    <th> UserName</th>
-                                    <th> Password</th>
-                                    <th> Webhook </th>
-                                    <th> Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {
-                                    this.state.emails.map(
-                                        email =>
-                                        <tr key = {email.id}>
-                                             <td> { email.userName} </td>
-                                             <td> {email.password}</td>
-                                             <td> {email.webhook}</td>
-                                             <td>
-                                                 <button onClick={ () => this.editEmployee(email.id)} className="btn btn-info">Update </button>
-                                                 <button style={{marginLeft: "10px"}} onClick={ () => this.deleteEmployee(email.id)} className="btn btn-danger">Delete </button>
-                                                 <button style={{marginLeft: "10px"}} onClick={ () => this.viewEmployee(email.id)} className="btn btn-info">View </button>
-                                             </td>
-                                        </tr>
-                                    )
-                                }
-                            </tbody>
-                        </table>
+                                            <strong>Password:</strong> {email.password}
+                                            <br />
+                                            <strong>Webhook:</strong> {email.webhook}
+                                        </Card.Text>
+                                        <Button onClick={() => this.editEmployee(email.id)} variant="info" className="me-2">
+                                            Update
+                                        </Button>
+                                        <Button onClick={() => this.viewEmployee(email.id)} variant="info">
+                                            View
+                                        </Button>
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+                        ))}
+                    </Row>
+                </div>
 
-                 </div>
-
-                 <Modal show={this.state.showModal} onHide={this.handleClose}>
+                <Modal show={this.state.showModal} onHide={this.handleClose}>
                     <Modal.Header closeButton>
                         <Modal.Title>Update Email</Modal.Title>
                     </Modal.Header>
@@ -157,9 +148,8 @@ class ListEmployeeComponent extends Component {
                         </Button>
                     </Modal.Footer>
                 </Modal>
-
             </div>
-        )
+        );
     }
 }
 
