@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const EMAIL_API_BASE_URL = 'http://localhost:8080/api/email';
+const EMAIL_API_BASE_URL = 'http://66.23.232.230/api/email';
 
 class EmailService {
   getEmail() {
