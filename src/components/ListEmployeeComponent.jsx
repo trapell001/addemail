@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Modal, Button, Form, Card, Col, Row } from 'react-bootstrap';
+import { Modal, Button, Form, Table } from 'react-bootstrap';
 import EmployeeService from '../services/EmailService';
 
 class ListEmployeeComponent extends Component {
@@ -9,39 +9,28 @@ class ListEmployeeComponent extends Component {
         this.state = {
             emails: [],
             showModal: false,
-            currentEmployee: {
+            currentEmail: {
                 id: '',
+                userName: '',
+                password: '',
+                webhook: ''
+            },
+            newEmail: {
                 userName: '',
                 password: '',
                 webhook: ''
             }
         };
 
-        this.addEmployee = this.addEmployee.bind(this);
-        this.editEmployee = this.editEmployee.bind(this);
+        this.addEmail = this.addEmail.bind(this);
         this.handleShow = this.handleShow.bind(this);
         this.handleClose = this.handleClose.bind(this);
         this.handleChange = this.handleChange.bind(this);
-        this.updateEmployee = this.updateEmployee.bind(this);
-    }
-
-    viewEmployee(id) {
-        this.props.history.push(`/view-employee/${id}`);
-    }
-
-    editEmployee(id) {
-        const employee = this.state.emails.find(emp => emp.id === id);
-        this.setState({ currentEmployee: employee, showModal: true });
-    }
-
-    componentDidMount() {
-        EmployeeService.getEmail().then((res) => {
-            this.setState({ emails: res.data });
-        });
-    }
-
-    addEmployee() {
-        this.props.history.push('/add-employee/_add');
+        this.editEmail = this.editEmail.bind(this);
+        this.deleteEmail = this.deleteEmail.bind(this);
+        this.fetchEmails = this.fetchEmails.bind(this);
+        this.handleAddChange = this.handleAddChange.bind(this);
+        this.updateEmail = this.updateEmail.bind(this);
     }
 
     handleShow() {
@@ -49,25 +38,74 @@ class ListEmployeeComponent extends Component {
     }
 
     handleClose() {
-        this.setState({ showModal: false, currentEmployee: { id: '', userName: '', password: '', webhook: '' } });
+        this.setState({
+            showModal: false,
+            currentEmail: { id: '', userName: '', password: '', webhook: '' },
+            newEmail: { userName: '', password: '', webhook: '' }
+        });
     }
 
-    handleChange(e) {
+    handleAddChange(e) {
         const { name, value } = e.target;
         this.setState(prevState => ({
-            currentEmployee: {
-                ...prevState.currentEmployee,
+            newEmail: {
+                ...prevState.newEmail,
                 [name]: value
             }
         }));
     }
 
-    updateEmployee() {
-        EmployeeService.updateEmail(this.state.currentEmployee, this.state.currentEmployee.id).then(res => {
+    handleChange(e) {
+        const { name, value } = e.target;
+        this.setState(prevState => ({
+            currentEmail: {
+                ...prevState.currentEmail,
+                [name]: value
+            }
+        }));
+    }
+
+    componentDidMount() {
+        this.fetchEmails();
+    }
+
+    addEmail() {
+        EmployeeService.createEmployee(this.state.newEmail).then(res => {
             this.setState(prevState => ({
-                emails: prevState.emails.map(emp => (emp.id === prevState.currentEmployee.id ? prevState.currentEmployee : emp)),
+                emails: [...prevState.emails, res.data],
                 showModal: false,
-                currentEmployee: { id: '', userName: '', password: '', webhook: '' }
+                newEmail: { userName: '', password: '', webhook: '' }
+            }));
+        });
+    }
+
+    editEmail(id) {
+        const email = this.state.emails.find(email => email.id === id);
+        this.setState({ currentEmail: { ...email }, showModal: true });
+    }
+
+    deleteEmail(id) {
+        EmployeeService.deleteEmail(id).then(res => {
+            this.setState(prevState => ({
+                emails: prevState.emails.filter(email => email.id !== id)
+            }));
+        });
+    }
+
+    fetchEmails() {
+        EmployeeService.getEmail().then(res => {
+            this.setState({ emails: res.data });
+        });
+    }
+
+    updateEmail() {
+        EmployeeService.updateEmail(this.state.currentEmail.id, this.state.currentEmail).then(res => {
+            this.setState(prevState => ({
+                emails: prevState.emails.map(email =>
+                    email.id === prevState.currentEmail.id ? prevState.currentEmail : email
+                ),
+                showModal: false,
+                currentEmail: { id: '', userName: '', password: '', webhook: '' }
             }));
         });
     }
@@ -75,57 +113,84 @@ class ListEmployeeComponent extends Component {
     render() {
         return (
             <div>
-                <h2 className="text-center">Emails</h2>
+                <h2 className="text-center">Email</h2>
                 <br />
                 <div className="container">
-                    <Row xs={1} md={2} lg={3} className="g-4">
+                    <Button variant="primary" onClick={this.handleShow} className="mb-3">
+                        Add Notification
+                    </Button>
+                    <Table striped bordered hover>
+                        <thead>
+                        <tr>
+                            <th>UserName</th>
+                            <th>Password</th>
+                            <th>Webhook</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
                         {this.state.emails.map(email => (
-                            <Col key={email.id}>
-                                <Card>
-                                    <Card.Body>
-                                        <Card.Text>
-                                            <strong>Email:</strong> {email.userName}
-                                            <br />
-
-                                            <strong>Password:</strong> {email.password}
-                                            <br />
-                                            <strong>Webhook:</strong> {email.webhook}
-                                        </Card.Text>
-                                        <Button onClick={() => this.editEmployee(email.id)} variant="info" className="me-2">
-                                            Update
-                                        </Button>
-                                        <Button onClick={() => this.viewEmployee(email.id)} variant="info">
-                                            View
-                                        </Button>
-                                    </Card.Body>
-                                </Card>
-                            </Col>
+                            <tr key={email.id}>
+                                <td>{email.userName}</td>
+                                <td>{email.password}</td>
+                                <td>{email.webhook}</td>
+                                <td>
+                                    <Button
+                                        onClick={() => this.editEmail(email.id)}
+                                        variant="info"
+                                        className="me-2"
+                                    >
+                                        Update
+                                    </Button>
+                                    <Button
+                                        onClick={() => this.deleteEmail(email.id)}
+                                        variant="danger"
+                                    >
+                                        Delete
+                                    </Button>
+                                </td>
+                            </tr>
                         ))}
-                    </Row>
+                        </tbody>
+                    </Table>
                 </div>
 
                 <Modal show={this.state.showModal} onHide={this.handleClose}>
                     <Modal.Header closeButton>
-                        <Modal.Title>Update Email</Modal.Title>
+                        <Modal.Title>{this.state.currentEmail.id ? 'Update Email' : 'Add Email'}</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
                         <Form>
                             <Form.Group>
-                                <Form.Label>UserName</Form.Label>
+                                <Form.Label>Notification</Form.Label>
                                 <Form.Control
                                     type="text"
                                     name="userName"
-                                    value={this.state.currentEmployee.userName}
-                                    onChange={this.handleChange}
+                                    value={
+                                        this.state.currentEmail.userName ||
+                                        this.state.newEmail.userName
+                                    }
+                                    onChange={
+                                        this.state.currentEmail.id
+                                            ? this.handleChange
+                                            : this.handleAddChange
+                                    }
                                 />
                             </Form.Group>
                             <Form.Group>
                                 <Form.Label>Password</Form.Label>
                                 <Form.Control
-                                    type="text"
+                                    type="password" // Changed to password type for better security
                                     name="password"
-                                    value={this.state.currentEmployee.password}
-                                    onChange={this.handleChange}
+                                    value={
+                                        this.state.currentEmail.password ||
+                                        this.state.newEmail.password
+                                    }
+                                    onChange={
+                                        this.state.currentEmail.id
+                                            ? this.handleChange
+                                            : this.handleAddChange
+                                    }
                                 />
                             </Form.Group>
                             <Form.Group>
@@ -133,8 +198,15 @@ class ListEmployeeComponent extends Component {
                                 <Form.Control
                                     type="text"
                                     name="webhook"
-                                    value={this.state.currentEmployee.webhook}
-                                    onChange={this.handleChange}
+                                    value={
+                                        this.state.currentEmail.webhook ||
+                                        this.state.newEmail.webhook
+                                    }
+                                    onChange={
+                                        this.state.currentEmail.id
+                                            ? this.handleChange
+                                            : this.handleAddChange
+                                    }
                                 />
                             </Form.Group>
                         </Form>
@@ -143,9 +215,15 @@ class ListEmployeeComponent extends Component {
                         <Button variant="secondary" onClick={this.handleClose}>
                             Close
                         </Button>
-                        <Button variant="primary" onClick={this.updateEmployee}>
-                            Save Changes
-                        </Button>
+                        {this.state.currentEmail.id ? (
+                            <Button variant="primary" onClick={this.updateEmail}>
+                                Save Changes
+                            </Button>
+                        ) : (
+                            <Button variant="primary" onClick={this.addEmail}>
+                                Add
+                            </Button>
+                        )}
                     </Modal.Footer>
                 </Modal>
             </div>

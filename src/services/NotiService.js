@@ -1,6 +1,7 @@
 import axios from "axios";
 
 const noti_url = "http://localhost:8080/api/noti";
+// const noti_url = "http://localhost:8080/api/noti";
 
 class NotiService {
     getNoti() {

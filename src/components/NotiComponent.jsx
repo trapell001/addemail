@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Modal, Button, Form } from 'react-bootstrap';
+import { Modal, Button, Form, Table } from 'react-bootstrap';
 import NotiService from '../services/NotiService';
 
 class NotiComponent extends Component {
@@ -12,35 +12,35 @@ class NotiComponent extends Component {
             currentNoti: {
                 id: '',
                 noti: ''
+            },
+            newNoti: {
+                noti: ''
             }
         };
 
-        this.editEmployee = this.editEmployee.bind(this);
+        this.editNoti = this.editNoti.bind(this);
+        this.addNoti = this.addNoti.bind(this);
+        this.deleteNoti = this.deleteNoti.bind(this);
         this.handleShow = this.handleShow.bind(this);
         this.handleClose = this.handleClose.bind(this);
         this.handleChange = this.handleChange.bind(this);
-        this.updateEmployee = this.updateEmployee.bind(this);
+        this.handleAddChange = this.handleAddChange.bind(this);
+        this.updateNoti = this.updateNoti.bind(this);
+        // this.saveNoti = this.saveNoti.bind(this);
     }
-
-    editEmployee(id) {
-        const noti = this.state.notis.find(noti => noti.id === id);
-        this.setState({ currentNoti: noti, showModal: true });
-    }
-
     componentDidMount() {
-        NotiService.getNoti().then((res) => {
-            this.setState({ notis: res.data });
-        });
+        this.fetchNotis();
     }
-
     handleShow() {
         this.setState({ showModal: true });
     }
-
     handleClose() {
-        this.setState({ showModal: false, currentNoti: { id: '', noti: '' } });
+        this.setState({ showModal: false, currentNoti: { id: '', noti: '' }, newNoti: { noti: '' } });
     }
-
+    handleAddChange(e) {
+        const { name, value } = e.target;
+        this.setState({ newNoti: { [name]: value } });
+    }
     handleChange(e) {
         const { name, value } = e.target;
         this.setState(prevState => ({
@@ -50,9 +50,43 @@ class NotiComponent extends Component {
             }
         }));
     }
+    addNoti() {
+        NotiService.createNoti(this.state.newNoti).then(res => {
+            this.setState(prevState => ({
+                notis: [...prevState.notis, res.data],
+                showModal: false,
+                newNoti: { noti: '' }
+            }));
+        });
+    }
 
-    updateEmployee() {
-        NotiService.updateNoti(this.state.currentNoti, this.state.currentNoti.id).then(res => {
+    editNoti(id) {
+        const noti = this.state.notis.find(noti => noti.id === id);
+        this.setState({ currentNoti: { ...noti }, showModal: true });
+    }
+
+
+
+    deleteNoti(id) {
+        NotiService.deleteNoti(id).then(res => {
+            this.setState(prevState => ({
+                notis: prevState.notis.filter(noti => noti.id !== id)
+            }));
+        });
+    }
+
+
+
+    fetchNotis() {
+        NotiService.getNoti().then((res) => {
+            this.setState({ notis: res.data });
+        });
+    }
+
+
+
+    updateNoti() {
+        NotiService.updateNoti(this.state.currentNoti.id, this.state.currentNoti).then(res => {
             this.setState(prevState => ({
                 notis: prevState.notis.map(noti => (noti.id === prevState.currentNoti.id ? prevState.currentNoti : noti)),
                 showModal: false,
@@ -67,7 +101,7 @@ class NotiComponent extends Component {
                 <h2 className="text-center">Notifications</h2>
                 <br />
                 <div className="container">
-                    <table className="table table-striped table-bordered">
+                    <Table striped bordered hover>
                         <thead>
                         <tr>
                             <th>Notification</th>
@@ -79,18 +113,22 @@ class NotiComponent extends Component {
                             <tr key={noti.id}>
                                 <td>{noti.noti}</td>
                                 <td>
-                                    <button onClick={() => this.editEmployee(noti.id)} className="btn btn-info me-2">Update</button>
-                                    <button onClick={() => this.viewEmployee(noti.id)} className="btn btn-info">View</button>
+                                    <Button onClick={() => this.editNoti(noti.id)} variant="info" className="me-2">Update</Button>
+                                    <Button onClick={() => this.deleteNoti(noti.id)} variant="danger">Delete</Button>
                                 </td>
                             </tr>
                         ))}
                         </tbody>
-                    </table>
+                    </Table>
                 </div>
+
+                <Button variant="primary" onClick={this.handleShow}>
+                    Add Notification
+                </Button>
 
                 <Modal show={this.state.showModal} onHide={this.handleClose}>
                     <Modal.Header closeButton>
-                        <Modal.Title>Update Notification</Modal.Title>
+                        <Modal.Title>{this.state.currentNoti.id ? 'Update Notification' : 'Add Notification'}</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
                         <Form>
@@ -99,8 +137,8 @@ class NotiComponent extends Component {
                                 <Form.Control
                                     type="text"
                                     name="noti"
-                                    value={this.state.currentNoti.noti}
-                                    onChange={this.handleChange}
+                                    value={this.state.currentNoti.noti || this.state.newNoti.noti}
+                                    onChange={this.state.currentNoti.id ? this.handleChange : this.handleAddChange}
                                 />
                             </Form.Group>
                         </Form>
@@ -109,9 +147,14 @@ class NotiComponent extends Component {
                         <Button variant="secondary" onClick={this.handleClose}>
                             Close
                         </Button>
-                        <Button variant="primary" onClick={this.updateEmployee}>
-                            Save Changes
-                        </Button>
+                        {this.state.currentNoti.id ?
+                            <Button variant="primary" onClick={this.updateNoti}>
+                                Save Changes
+                            </Button> :
+                            <Button variant="primary" onClick={this.addNoti}>
+                                Add
+                            </Button>
+                        }
                     </Modal.Footer>
                 </Modal>
             </div>

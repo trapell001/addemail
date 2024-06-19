@@ -1,29 +1,23 @@
-import axios from "axios";
+import axios from 'axios';
 
-const EMAIL_URL = "http://66.23.232.230/api/email";
+const EMAIL_API_BASE_URL = 'http://localhost:8080/api/email';
 
 class EmailService {
   getEmail() {
-    return axios.get(EMAIL_URL);
+    return axios.get(EMAIL_API_BASE_URL);
   }
 
-  createEmployee(employee) {
-    return axios.post(EMAIL_URL, employee);
+  createEmployee(email) {
+    return axios.post(EMAIL_API_BASE_URL, email);
   }
 
-  getEmployeeById(employeeId) {
-    return axios.get(EMAIL_URL + "/" + employeeId);
+  updateEmail(emailId, email) {
+    return axios.put(`${EMAIL_API_BASE_URL}/${emailId}`, email);
   }
 
-  updateEmail(employee, employeeId) {
-    return axios.put(EMAIL_URL + "/" + employeeId, employee);
+  deleteEmail(emailId) {
+    return axios.delete(`${EMAIL_API_BASE_URL}/${emailId}`);
   }
-
-  deleteEmployee(employeeId) {
-    return axios.delete(EMAIL_URL + "/" + employeeId);
-  }
-  // _______________NOTI _________
 }
-
 
 export default new EmailService();
